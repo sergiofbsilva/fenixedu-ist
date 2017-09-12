@@ -1,8 +1,9 @@
 package pt.ist.registration.process.ui.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.UUID;
@@ -27,7 +28,9 @@ import com.itextpdf.text.pdf.PdfString;
 
 import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.Atomic.TxMode;
+import pt.ist.registration.process.domain.DeclarationTemplate;
 import pt.ist.registration.process.domain.RegistrationDeclarationFile;
+import pt.ist.registration.process.domain.SignatureFieldSettings;
 import pt.ist.registration.process.ui.service.exception.ProblemsGeneratingDocumentException;
 
 @Service
@@ -47,27 +50,30 @@ public class RegistrationDeclarationCreatorService {
         this.qrCodeGenerator = qrCodeGenerator;
     }
 
-    public RegistrationDeclarationFile generateAndSaveDocumentsForRegistration(Registration registration,
-            ExecutionYear executionYear, Locale locale) throws ProblemsGeneratingDocumentException {
+    public RegistrationDeclarationFile generateAndSaveFile(Registration registration,
+            ExecutionYear executionYear, DeclarationTemplate declarationTemplate) throws ProblemsGeneratingDocumentException {
+        Locale locale = declarationTemplate.getLocale();
         String uniqueIdentifier = UUID.randomUUID().toString();
         JsonObject payload = getRegistrationDeclarationPayload(registration, executionYear, locale, uniqueIdentifier);
-        String templateName = String.format("declaracao-matricula-%s.html", locale.getLanguage().toLowerCase());
-        try {
-            InputStream template = pdfTemplateResolver.resolve(templateName);
-            byte[] document = pdfRendererService.renderToByteArray(template, payload);
+        try (ByteArrayInputStream templateStream = new ByteArrayInputStream(declarationTemplate.getTemplateHtml().getBytes
+        (StandardCharsets.UTF_8))){
+            byte[] document = pdfRendererService.renderToByteArray(templateStream, payload);
             String executionYearName = executionYear.getName().replaceAll("/", "-");
-            String filename = String.format("%s_declaracao_%s_%s_%s.pdf", executionYearName, locale.getLanguage(), registration
+            String filename = String.format(declarationTemplate.getFilenameFormat(), executionYearName, locale.getLanguage(), registration
             .getDegree().getSigla(), registration.getPerson().getUsername());
-            return createRegistrationDocumentFile(registration, executionYear, locale, uniqueIdentifier, document, filename);
-        } catch (UnresolvableTemplateException | PdfRenderingException e) {
-            throw new Error(e);
+            return createRegistrationDocumentFile(registration, executionYear, declarationTemplate,  locale, uniqueIdentifier,
+                    document, filename);
+        } catch (PdfRenderingException | IOException e) {
+            throw new ProblemsGeneratingDocumentException(e);
         }
     }
 
     @Atomic(mode = TxMode.WRITE)
-    protected RegistrationDeclarationFile createRegistrationDocumentFile(Registration registration, ExecutionYear executionYear,
+    protected RegistrationDeclarationFile createRegistrationDocumentFile(Registration registration, ExecutionYear
+            executionYear, DeclarationTemplate declarationTemplate,
             Locale locale, String uniqueIdentifier, byte[] document, String filename) {
-        return new RegistrationDeclarationFile(filename, document, registration, executionYear, locale, uniqueIdentifier);
+        return new RegistrationDeclarationFile(filename, document, declarationTemplate, registration, executionYear, locale,
+                uniqueIdentifier);
     }
 
     public JsonObject getRegistrationDeclarationPayload(Registration registration, ExecutionYear executionYear, Locale locale,
@@ -80,24 +86,27 @@ public class RegistrationDeclarationCreatorService {
         return payload;
     }
 
-    public byte[] generateDocumentWithSignatureField(RegistrationDeclarationFile registrationDeclarationFile,
-            String signatureFieldName) throws ProblemsGeneratingDocumentException {
+    public byte[] generateDocumentWithSignatureField(RegistrationDeclarationFile registrationDeclarationFile) throws
+    ProblemsGeneratingDocumentException {
         if (registrationDeclarationFile == null) {
             return null;
         }
+        SignatureFieldSettings settings =
+                registrationDeclarationFile.getDeclarationTemplate().getSignatureFieldsSettings();
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             PdfReader original = new PdfReader(registrationDeclarationFile.getStream());
             PdfStamper stp = new PdfStamper(original, bos);
             PdfFormField sig = PdfFormField.createSignature(stp.getWriter());
-            sig.setWidget(new Rectangle(100, 300, 500, 200), null);
+            sig.setWidget(new Rectangle(settings.getLlx(), settings.getLly(),
+            settings.getUrx(), settings.getUry()), null);
             sig.setFlags(PdfAnnotation.FLAGS_PRINT);
             sig.put(PdfName.DA, new PdfString("/Helv 0 Tf 0 g"));
-            sig.setFieldName(signatureFieldName);
-            sig.setPage(1);
-            stp.addAnnotation(sig, 1);
+            sig.setFieldName(settings.getName());
+            sig.setPage(settings.getPage());
+            stp.addAnnotation(sig, settings.getPage());
 
-            stp.getOverContent(1);
+            stp.getOverContent(settings.getPage());
             stp.close();
             return bos.toByteArray();
         } catch (IOException | DocumentException e) {
