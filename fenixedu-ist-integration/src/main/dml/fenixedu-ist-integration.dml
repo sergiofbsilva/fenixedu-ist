@@ -19,20 +19,32 @@ class cgd.CgdCardCounter {
     int count;
 }
 
+class CardOperationLog extends .org.fenixedu.academic.domain.DomainOperationLog {}
+
 class cgd.CgdCard {
     int serialNumber;
     boolean allowSendDetails;
+    boolean allowSendCardDetails;
+    boolean allowSendBankDetails;
     DateTime successfulSentData;
 }
 
 class BpiCard {
 	boolean allowSendDetails;
+	boolean allowSendCardDetails;
+	boolean allowSendBankDetails;
 	DateTime whenAllowChanged;
+	DateTime whenCardAllowChanged;
+	DateTime whenBankAllowChanged;
 }
  
 class SantanderCard {
 	boolean allowSendDetails;
+	boolean allowSendCardDetails;
+    boolean allowSendBankDetails;
 	DateTime whenAllowChanged;
+	DateTime whenCardAllowChanged;
+    DateTime whenBankAllowChanged;
 }
 
 class reports.StudentMeritReportFile extends .org.fenixedu.academic.domain.reports.GepReportFile {}

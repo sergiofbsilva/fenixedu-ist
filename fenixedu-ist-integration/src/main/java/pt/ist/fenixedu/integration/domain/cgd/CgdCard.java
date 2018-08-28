@@ -31,6 +31,7 @@ import org.fenixedu.bennu.core.security.Authenticate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import pt.ist.fenixedu.integration.domain.CardOperationLog;
 import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.Atomic.TxMode;
 import pt.ist.fenixframework.FenixFramework;
@@ -80,6 +81,43 @@ public class CgdCard extends CgdCard_Base {
             if (card != null) {
                 card.setAllowSendDetails(allowAccess);
                 if (allowAccess) {
+                    return card;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Atomic
+    public static CgdCard setGrantCardAccess(final boolean allowCardAccess) {
+        final User user = Authenticate.getUser();
+        if (user != null) {
+            final int year = Year.now().getValue();
+            final CgdCard card = findCardFor(user, year, allowCardAccess);
+            if (card != null) {
+                card.setAllowSendCardDetails(allowCardAccess);
+                if (allowCardAccess) {
+                    return card;
+                }
+                CardOperationLog cardOperationLog = new CardOperationLog();
+                cardOperationLog.setDescription("CGD - Tomei conhecimento cartão");
+            }
+        }
+        return null;
+    }
+
+    @Atomic
+    public static CgdCard setGrantBankAccess(final boolean allowBankAccess) {
+        final User user = Authenticate.getUser();
+        if (user != null) {
+            final int year = Year.now().getValue();
+            final CgdCard card = findCardFor(user, year, allowBankAccess);
+            if (card != null) {
+                card.setAllowSendBankDetails(allowBankAccess);
+                CardOperationLog cardOperationLog = new CardOperationLog();
+                String authorization = allowBankAccess ? "Autorizo" : "Não autorizo";
+                cardOperationLog.setDescription("CGD - " + authorization + " a cedência banco");
+                if (allowBankAccess) {
                     return card;
                 }
             }
