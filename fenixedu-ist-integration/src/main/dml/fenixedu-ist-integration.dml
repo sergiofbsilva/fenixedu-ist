@@ -19,7 +19,10 @@ class cgd.CgdCardCounter {
     int count;
 }
 
-class CardOperationLog extends .org.fenixedu.academic.domain.DomainOperationLog {}
+class CardDataAuthorizationLog extends .org.fenixedu.academic.domain.DomainOperationLog {
+    String title;
+    String answer;
+}
 
 class cgd.CgdCard {
     int serialNumber;

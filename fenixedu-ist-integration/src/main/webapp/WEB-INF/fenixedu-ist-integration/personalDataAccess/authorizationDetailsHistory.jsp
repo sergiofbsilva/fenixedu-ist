@@ -13,8 +13,10 @@
 
 <table class="table results">
     <thead>
-    <th>Data</th>
-    <th>Description</th>
+        <th>Data</th>
+        <th>Título</th>
+        <th>Texto</th>
+        <th>Resposta</th>
     </thead>
     <tbody>
     <c:if test="${not empty cardAuthorizationLogs}">
@@ -25,8 +27,15 @@
                     <c:out value="${log.whenDateTime.toString(format)}" />
                 </td>
                 <td>
-                    <c:out value="${log.description}"/>
+                    <c:out value="${log.title}" />
                 </td>
+                <td>
+                    <c:out value="${log.body}" escapeXml="false" />
+                </td>
+                <td>
+                <c:out value="${log.description}" />
+                </td>
+                
             </tr>
         </c:forEach>
     </c:if>

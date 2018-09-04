@@ -2,7 +2,9 @@ package pt.ist.fenixedu.integration.domain;
 
 import java.time.Year;
 
+import org.fenixedu.academic.util.Bundle;
 import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.i18n.BundleUtil;
 import org.fenixedu.bennu.core.security.Authenticate;
 import org.joda.time.DateTime;
 
@@ -22,7 +24,7 @@ public class SantanderCard extends SantanderCard_Base {
     }
 
     @Atomic
-    public static void setGrantAccess(final boolean allowAccess, final User user) {
+    public static void setGrantAccess(final boolean allowAccess, String title, String body, final User user) {
         if (user != null) {
             final SantanderCard card = user.getSantanderCard();
             if (card != null) {
@@ -34,7 +36,7 @@ public class SantanderCard extends SantanderCard_Base {
     }
 
     @Atomic
-    public static void setGrantCardAccess(final boolean allowCardAccess, final User user) {
+    public static void setGrantCardAccess(final boolean allowCardAccess, final User user, final String title, final String body) {
         if (user != null) {
             final SantanderCard card = user.getSantanderCard();
             if (card != null) {
@@ -43,13 +45,13 @@ public class SantanderCard extends SantanderCard_Base {
                 SantanderCard santanderCard = new SantanderCard(user);
                 santanderCard.setAllowSendCardDetails(allowCardAccess);
             }
-            CardOperationLog cardOperationLog = new CardOperationLog();
-            cardOperationLog.setDescription("Santander - Tomei conhecimento cartão");
+
+            new CardDataAuthorizationLog(title, body, BundleUtil.getString("resources/FenixEduIstIntegration", "label.take.consent"));
         }
     }
 
     @Atomic
-    public static void setGrantBankAccess(final boolean allowBankAccess, final User user) {
+    public static void setGrantBankAccess(final boolean allowBankAccess, final User user, final String title, final String body) {
         if (user != null) {
             final SantanderCard card = user.getSantanderCard();
             if (card != null) {
@@ -58,9 +60,7 @@ public class SantanderCard extends SantanderCard_Base {
                 SantanderCard santanderCard = new SantanderCard(user);
                 santanderCard.setAllowSendBankDetails(allowBankAccess);
             }
-            CardOperationLog cardOperationLog = new CardOperationLog();
-            String authorization = allowBankAccess ? "Autorizo" : "Não autorizo";
-            cardOperationLog.setDescription("Santander - " + authorization + "banco");
+            new CardDataAuthorizationLog(title, body, BundleUtil.getString(Bundle.ACADEMIC, allowBankAccess ? "label.yes" : "label.no"));
         }
     }
 

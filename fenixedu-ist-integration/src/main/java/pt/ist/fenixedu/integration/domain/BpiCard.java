@@ -2,7 +2,9 @@ package pt.ist.fenixedu.integration.domain;
 
 import java.time.Year;
 
+import org.fenixedu.academic.util.Bundle;
 import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.i18n.BundleUtil;
 import org.fenixedu.bennu.core.security.Authenticate;
 import org.joda.time.DateTime;
 
@@ -34,7 +36,7 @@ public class BpiCard extends BpiCard_Base {
     }
 
     @Atomic
-    public static void setGrantCardAccess(final boolean allowCardAccess, final User user) {
+    public static void setGrantCardAccess(final boolean allowCardAccess, final User user, String title, String body) {
         if (user != null) {
             final BpiCard card = user.getBpiCard();
             if (card != null) {
@@ -43,14 +45,12 @@ public class BpiCard extends BpiCard_Base {
                 BpiCard bpiCard = new BpiCard(user, allowCardAccess);
                 bpiCard.setAllowSendCardDetails(allowCardAccess);
             }
-            CardOperationLog cardOperationLog = new CardOperationLog();
-            String authorization = allowCardAccess ? "Autorizo" : "Não autorizo";
-            cardOperationLog.setDescription("BPI - " + authorization + " a cedência cartão");
+            new CardDataAuthorizationLog(title, body, BundleUtil.getString(Bundle.ACADEMIC,allowCardAccess ? "label.yes" : "label.no"));
         }
     }
 
     @Atomic
-    public static void setGrantBankAccess(final boolean allowBankAccess, final User user) {
+    public static void setGrantBankAccess(final boolean allowBankAccess, final User user, String title, String body) {
         if (user != null) {
             final BpiCard card = user.getBpiCard();
             if (card != null) {
@@ -59,9 +59,7 @@ public class BpiCard extends BpiCard_Base {
                 BpiCard bpiCard = new BpiCard(user, allowBankAccess);
                 bpiCard.setAllowSendBankDetails(allowBankAccess);
             }
-            CardOperationLog cardOperationLog = new CardOperationLog();
-            String authorization = allowBankAccess ? "Autorizo" : "Não autorizo";
-            cardOperationLog.setDescription("BPI - " + authorization + " a cedência banco");
+            new CardDataAuthorizationLog(title, body, BundleUtil.getString(Bundle.ACADEMIC,allowBankAccess ? "label.yes" : "label.no"));
         }
     }
 
